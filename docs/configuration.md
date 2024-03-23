@@ -152,6 +152,10 @@ enable_inotify_warnings: True
 #   to add a duplicate watch or when inotify encounters an error.  On some
 #   file systems inotify may not work as expected, this gives users the
 #   option to suppress warnings when necessary.  The default is True.
+enable_config_write_access: True
+#   When enabled the configuration folder is writable over the API.  Some
+#   installations, such as those in public areas, may wish to lock out
+#   configuration changes.  The default is True.
 ```
 
 !!! Note
@@ -433,11 +437,6 @@ aspect_ratio: 4:3
     | jMuxer | `jmuxer-stream` | Mainsail |
     | HTTP Page | `iframe`| Fluidd |
 
-## Optional Components
-
-Optional Components are only loaded if present in `moonraker.conf`.  This
-includes components that may not have any configuration.
-
 ### `[authorization]`
 
 The `[authorization]` section provides configuration for Moonraker's
@@ -469,8 +468,8 @@ trusted_clients:
 #   must be expressed in CIDR notation (see http://ip.sb/cidr for more info).
 #   For example, an entry of 192.168.1.0/24 will authorize IPs in the range of
 #   192.168.1.1 - 192.168.1.254.  Note that when specifying IPv4 ranges the
-#   last segment of the ip address must be 0. The default is no clients are
-#   trusted.
+#   last segment of the ip address must be 0. The default is no IPs or
+#   domains are trusted.
 cors_domains:
   http://klipper-printer.local
   http://second-printer.local:7125
@@ -497,6 +496,19 @@ default_source: moonraker
 #   The default source used to authenticate user logins. Can be "ldap" or
 #   "moonraker"  The default is "moonraker".
 ```
+
+!!! Tip
+    When configuring the `trusted_clients` option it is generally recommended
+    to stick with IP ranges and avoid including domain names.  When attempting to
+    authenticate a request against a domain name Moonraker must perform a DNS
+    lookup. If the DNS service is not available then authentication will fail
+    and an error will be returned.  In addition, DNS lookups will introduce delay
+    in the response.
+
+## Optional Components
+
+Optional Components are only loaded if present in `moonraker.conf`.  This
+includes components that may not have any configuration.
 
 ### `[ldap]`
 
@@ -1734,11 +1746,15 @@ disk or cloned from unofficial sources are not supported.
 
 [update_manager]
 enable_auto_refresh: False
-#   When set to True Moonraker will attempt to fetch status about
-#   available updates roughly every 24 hours, between 12am-4am.
+#   When set to True, Moonraker will check roughly every 1 hour (only within
+#   the update window) whether it's time to fetch status about available updates.
 #   When set to False Moonraker will only fetch update state on startup
 #   and clients will need to request that Moonraker updates state.  The
 #   default is False.
+refresh_window: 0-5
+#   The hours between which the periodic update check will be done.
+#   Default is 0-5, meaning the refresh can only occur from midnight until 5am.
+#   It can go over midnight, e.g. 22-6.
 refresh_interval: 672
 #   The interval (in hours) after which the update manager will check
 #   for new updates.  This interval is applies to updates for Moonraker,
@@ -1903,7 +1919,7 @@ virtualenv:
 #   dependencies when it detects a change to the requirements file.  The
 #   default is no virtualenv.
 env:
-#   *** DEPRICATED FOR NEW CONFIGURATIONS - USE the 'virtualenv' OPTION ***
+#   *** DEPRECATED FOR NEW CONFIGURATIONS - USE the 'virtualenv' OPTION ***
 #
 #   The path to the extension's virtual environment executable on disk.  For
 #   example, Moonraker's venv is located at ~/moonraker-env/bin/python.
@@ -1919,7 +1935,7 @@ system_dependencies:
 #  "System Dependencies File Format" section of this document for details on how
 #  this file should be formatted. The default is no system dependencies.
 install_script:
-#  *** DEPRICATED FOR NEW CONFIGURATIONS - USE the 'system_dependencies' OPTION ***
+#  *** DEPRECATED FOR NEW CONFIGURATIONS - USE the 'system_dependencies' OPTION ***
 #
 #  The file location, relative to the repository, for the installation script
 #  associated with this application.  Moonraker will not run this script, instead
@@ -2821,7 +2837,7 @@ state_response_template:
 #
 #  The above example assumes a json response with multiple fields in a struct
 #  is received. Individual measurements are extracted from that struct, coerced
-#  to a numeric format and passed to Moonraker. The default is the payload.
+#  to a numeric format and passed to Moonraker. This parameter must be provided.
 ```
 
 !!! Note
